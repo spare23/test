@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>test--vue-2计算属性和侦听器</title>
+    <script src="js/vue-2.5.16.js"></script>
+    <style>
+        .section{
+            margin:30px 10%;
+            padding:5px;
+            border:1px solid #41b883;
+        }
+    </style>
+</head>
+<body>
+<div class="section">
+    <h2>计算属性</h2>
+    <div id="app">
+        <p>Original message: "{{message}}"</p>
+        <p>Computed reversed message: "{{reversedMessage}}"</p>
+        <i>[ 你可以打开浏览器的控制台，自行修改例子中的 vm。如：(vm.message='abcd';) ]</i>
+    </div>
+    <script>
+        var vm=new Vue({
+            el:'#app',
+            data:{
+                message:'Hello'
+            },
+            computed:{
+                /*
+                * 计算属性是基于它们的依赖进行缓存的
+                * 只在相关依赖发生改变时它们才会重新求值
+                * */
+                // 计算属性的 getter
+                // 这里我们声明了一个计算属性 reversedMessage。
+                // 我们提供的函数将用作属性vm.reversedMessage 的 getter 函数
+                reversedMessage:function(){
+                    // `this` 指向 vm 实例
+                    return this.message.split('').reverse().join('');
+                }
+            }
+        });
+    </script>
+</div>
+<div class="section">
+    <h2>侦听器</h2>
+    <div id="watch-example">
+        <p>
+            Ask a yes/no question:
+            <input v-model="question" type="text"/>
+        </p>
+        <p>{{answer}}</p>
+    </div>
+    <script src="js/axios-0.18.0.min.js"></script>
+    <script src="js/lodash-4.17.11.min.js"></script>
+    <script>
+        var watchExampoleVM=new Vue({
+            el:'#watch-example',
+            data:{
+                question:'',
+                answer:'I cannot give you an answer until you ask a question!'
+            },
+            watch:{
+                // 如果 `question` 发生改变，这个函数就会运行
+                question:function(newQuestion,oldQuestion){
+                    this.answer='Waiting for you to stop typing...';
+                    this.debouncedGetAnswer();
+                }
+            },
+            created:function(){
+                // `_.debounce` 是一个通过 Lodash 限制操作频率的函数。
+                // 在这个例子中，我们希望限制访问 yesno.wtf/api 的频率
+                // AJAX 请求直到用户输入完毕才会发出。想要了解更多关于
+                // `_.debounce` 函数 (及其近亲 `_.throttle`) 的知识，
+                // 请参考：https://lodash.com/docs#debounce
+                this.debouncedGetAnswer=_.debounce(this.getAnswer,500);
+            },
+            methods:{
+                getAnswer:function(){
+                    if(this.question.indexOf('?')===-1){
+                        this.answer='Question usually contain a question mark. :-)';
+                        return;
+                    }
+                    this.answer='Thinking...';
+                    var vm=this;
+                    axios.get('https://yesno.wtf/api')
+                        .then(function(response){
+                            vm.answer=_.capitalize(response.data.answer);
+                        })
+                        .catch(function(error){
+                            vm.answer='Error!Could not reach the API.'+error;
+                        });
+                }
+            }
+        });
+    </script>
+</div>
+</body>
+</html>
